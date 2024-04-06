@@ -1,51 +1,56 @@
-    name: Continues Integration Delivery and Deployment
+name: Continuous Integration and Continuous Deployment
 
-    on:
-      push:
-        branches:
-          - main
-    jobs:
-      build-deploy:
-        name: Continues Integration Delivery and Deployment
-        runs-on: macos-latest
-        steps:
-          - name: Checkout code
-            uses: actions/checkout@v3
+on:
+  push:
+    branches:
+      - main
 
+jobs:
+  build-deploy:
+    name: CI/CD Pipeline
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-          - name: Setup JDK 17
-            uses: actions/setup-java@v3
-            with:
-              distribution: 'corretto'
-              java-version: 17
+      # Step 2: Setup JDK 17
+      - name: Setup JDK 17
+        uses: actions/setup-java@v2
+        with:
+          java-version: 17
 
-          - name: Unit Testing
-            run: mvn -B test --file pom.xml
+      # Step 3: Execute unit tests with Maven
+      - name: Unit Testing
+        run: mvn -B test --file pom.xml
 
-          - name: Package and build
-            run:
-              mvn clean
-              mvn -B package --file pom.xml
+      # Step 4: Clean and package the application with Maven
+      - name: Package and build
+        run:
+          mvn clean
+          mvn -B package --file pom.xml
 
-          - name: Build Docker Image
-            uses: docker/build-push-action@v2
-            with:
-              context: .
-              dockerfile: Dockerfile
-              push: false
-              tags: ${{secrets.DOCKER_HUB_USERNAME}}//spring_boot_with_react:$(latest)
+      # Step 5: Build Docker image
+      - name: Build Docker Image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          dockerfile: Dockerfile
+          push: false  # Set to true if you want to push the image later
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/spring_boot_with_react:latest
 
-          - name: Login to Docker Hub
-            uses: docker/login-action@v1
-            with:
-              username: ${{secrets.DOCKER_HUB_USERNAME}}
-              password: ${{secrets.DOCKER_HUB_ACCESS_TOKEN}}
+      # Step 6: Login to Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-          - name: Push to Docker Hub
-            uses: docker/build-push-action@v2
-            with:
-              context: .
-              dockerfile: Dockerfile
-              push: true
-              tags: ${{secrets.DOCKER_HUB_USERNAME}}//spring_boot_with_react:$(latest)
-
+      # Step 7: Push Docker image to Docker Hub
+      - name: Push to Docker Hub
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          dockerfile: Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/spring_boot_with_react:latest
